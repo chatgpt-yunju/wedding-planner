@@ -147,7 +147,20 @@ router.get('/', async (req, res) => {
   try {
     const userId = req.user.id;
 
-    const result = await query(
+    // Get user info
+    const userResult = await query(
+      'SELECT id, email, name FROM users WHERE id = $1',
+      [userId]
+    );
+
+    if (userResult.rows.length === 0) {
+      return res.status(404).json({ error: 'User not found' });
+    }
+
+    const user = userResult.rows[0];
+
+    // Get couple info
+    const coupleResult = await query(
       `SELECT c.id, c.status, c.activated_at,
               ua.name as partner_a_name, ub.name as partner_b_name,
               ua.id as partner_a_id, ub.id as partner_b_id
@@ -155,17 +168,17 @@ router.get('/', async (req, res) => {
        LEFT JOIN users ua ON c.partner_a_id = ua.id
        LEFT JOIN users ub ON c.partner_b_id = ub.id
        WHERE (c.partner_a_id = $1 OR c.partner_b_id = $2)
-         AND c.status = 'active'
+         AND c.status IN ('pending', 'active')
        LIMIT 1`,
       [userId, userId]
     );
 
-    if (result.rows.length === 0) {
-      return res.json({ couple: null });
+    if (coupleResult.rows.length === 0) {
+      return res.json({ user, couple: null });
     }
 
-    const couple = result.rows[0];
-    res.json({ couple });
+    const couple = coupleResult.rows[0];
+    res.json({ user, couple });
   } catch (err) {
     console.error('Get couple error', err);
     res.status(500).json({ error: 'Server error' });

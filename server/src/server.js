@@ -39,10 +39,12 @@ if (process.env.NODE_ENV === 'production') {
   app.use(express.static(path.join(__dirname, '../client/dist')));
 }
 
+import { authenticate } from './middleware/auth.js';
+
 // API 路由
 app.use('/api/auth', authRoutes);
-app.use('/api/couple', coupleRoutes);
-app.use('/api/couple', syncRoutes); // mount sync under /api/couple/:coupleId/sync
+app.use('/api/couple', authenticate, coupleRoutes);
+app.use('/api/couple', authenticate, syncRoutes); // mount sync under /api/couple/:coupleId/sync
 
 // 健康检查
 app.get('/health', (req, res) => {

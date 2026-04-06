@@ -105,11 +105,11 @@ router.post('/login', async (req, res) => {
       return res.status(401).json({ error: 'Invalid credentials' });
     }
 
-    // 查找用户的 active couple
+    // 查找用户的 couple (pending 或 active)
     const coupleResult = await query(
       `SELECT id, status FROM couples
        WHERE (partner_a_id = $1 OR partner_b_id = $2)
-         AND status = 'active'
+         AND status IN ('pending', 'active')
        LIMIT 1`,
       [user.id, user.id]
     );

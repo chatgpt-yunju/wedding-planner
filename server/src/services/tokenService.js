@@ -20,6 +20,7 @@ const JWT_CONFIG = {
 export function generateTokens(user, coupleId) {
   const payload = {
     sub: user.id,
+    id: user.id, // Include both for compatibility
     email: user.email,
     name: user.name,
     coupleId,
