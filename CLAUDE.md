@@ -200,6 +200,28 @@ Feature modules mirror structure under `client/src/features/`.
 - React 19 features: `use` for async data loading (where applicable)
 - PWA: Works offline, cached assets, can be installed on mobile
 
+## gstack Integration (Optional)
+
+This project can utilize [gstack](https://github.com/garrytan/gstack) for advanced QA and browser automation:
+
+### Installation
+
+```bash
+# Requires Bun (v1.0+)
+git clone --single-branch --depth 1 https://github.com/garrytan/gstack.git ~/.claude/skills/gstack && cd ~/.claude/skills/gstack && ./setup
+```
+
+### Available Skills
+
+- `/browse` - Headless browser navigation, screenshots, element interaction
+- `/qa` - Automated QA testing with bug detection
+- `/review` - PR review automation
+- `/design-review` - Visual QA and design consistency checks
+- `/retro` - Weekly engineering retrospective
+- `/ship` / `/land-and-deploy` - Shipping automation
+
+See `GSTACK_INSTALL.md` for details.
+
 ## Git Workflow
 
 - Main branch: `main`
