@@ -31,13 +31,19 @@ export function useSync() {
 
 /**
  * 初始化同步（需在登录后调用）
+ * 注意：这是一个独立的函数，不是 hook！
  */
-export function useInitializeSync(token: string, coupleId: string) {
-  useEffect(() => {
-    if (!token || !coupleId) return;
+let syncInitialized = false;
+let currentCoupleId: string | null = null;
 
-    initSync(token, coupleId);
-  }, [token, coupleId]);
+export function initializeSync(token: string, coupleId: string) {
+  if (syncInitialized && currentCoupleId === coupleId) {
+    return; // Already initialized for this couple
+  }
+
+  initSync(token, coupleId);
+  syncInitialized = true;
+  currentCoupleId = coupleId;
 }
 
 /**

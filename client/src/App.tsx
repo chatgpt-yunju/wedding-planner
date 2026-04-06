@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { useInitializeSync } from './hooks/useSync';
+import { initializeSync } from './hooks/useSync';
 import { register, login, getCoupleInfo } from './lib/api';
 import Login from './features/auth/Login';
 import Dashboard from './features/dashboard/Dashboard';
@@ -26,7 +26,7 @@ function App() {
       setUser(coupleInfo.user);
       setCouple(coupleInfo.couple);
       localStorage.setItem('accessToken', token);
-      useInitializeSync(token, coupleInfo.couple.id);
+      initializeSync(token, coupleInfo.couple.id);
     } catch (err) {
       localStorage.removeItem('accessToken');
     } finally {
@@ -40,7 +40,7 @@ function App() {
     setUser(data.user);
     if (data.couple) {
       setCouple(data.couple);
-      useInitializeSync(data.tokens.accessToken, data.couple.id);
+      initializeSync(data.tokens.accessToken, data.couple.id);
     } else {
       // 用户注册后尚未配对，显示配对页面
       setCouple(data.couple);
@@ -52,7 +52,7 @@ function App() {
     localStorage.setItem('accessToken', data.tokens.accessToken);
     setUser(data.user);
     setCouple(data.couple); // pending couple
-    useInitializeSync(data.tokens.accessToken, data.couple.id);
+    initializeSync(data.tokens.accessToken, data.couple.id);
   };
 
   const handleLogout = () => {
