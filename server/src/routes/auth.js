@@ -58,7 +58,18 @@ router.post('/register', async (req, res) => {
       tokens,
     });
   } catch (err) {
-    console.error('Register error', err);
+    console.error('Register error:', err);
+    // In development, return detailed error
+    if (process.env.NODE_ENV === 'development') {
+      return res.status(500).json({
+        error: 'Server error',
+        details: {
+          message: err.message,
+          code: err.code,
+          stack: err.stack?.split('\n').slice(0, 3)
+        }
+      });
+    }
     res.status(500).json({ error: 'Server error' });
   }
 });
