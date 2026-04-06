@@ -152,6 +152,16 @@ npm run dev
 - 🔔 通知提醒 (Web Push)
 - 🔐 端到端加密 (可选升级)
 
+## AI 助手功能
+
+设置中可配置 Anthropic 兼容 API（如 yunjunet.cn）以使用 `step-3.5-flash` 模型：
+- 配置 Base URL、API Key、模型名称
+- 连接测试功能
+- 对话测试界面
+- API Key 仅本地存储，不会上传到服务器
+
+详情见 `client/src/lib/anthropic.ts` 和设置页面。
+
 ## API 接口
 
 ### 认证
