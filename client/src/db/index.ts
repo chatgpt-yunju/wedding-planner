@@ -142,6 +142,16 @@ export interface SyncMeta {
   coupleId?: string;
 }
 
+export interface AIConfig {
+  id: string;
+  couple_id: string;
+  baseUrl: string;
+  apiKey: string;
+  model: string;
+  createdAt: number;
+  updatedAt: number;
+}
+
 // ==================== Dexie 数据库实例 ====================
 
 export const db = new Dexie('WeddingPlannerDB') as Dexie & {
@@ -155,6 +165,7 @@ export const db = new Dexie('WeddingPlannerDB') as Dexie & {
   memories: EntityTable<Memory, 'id'>;
   gifts: EntityTable<Gift, 'id'>;
   syncMeta: EntityTable<SyncMeta, 'id'>;
+  aiConfigs: EntityTable<AIConfig, 'id'>;
 };
 
 db.version(1).stores({
@@ -168,4 +179,5 @@ db.version(1).stores({
   memories: '++id, couple_id, captured_at, updatedAt, _deleted',
   gifts: '++id, couple_id, guest_id, date, updatedAt, _deleted',
   syncMeta: 'id',
+  aiConfigs: '++id, couple_id, updatedAt',
 });
