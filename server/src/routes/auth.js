@@ -7,6 +7,19 @@ import { generateTokens, generateInviteCode, hashToken } from '../services/token
 const router = express.Router();
 
 /**
+ * 密码强度验证
+ * 要求: 至少8字符, 包含大小写字母和数字
+ */
+function validatePassword(password) {
+  if (!password) return 'Password is required';
+  if (password.length < 8) return 'Password must be at least 8 characters';
+  if (!/[a-z]/.test(password)) return 'Password must contain lowercase letter';
+  if (!/[A-Z]/.test(password)) return 'Password must contain uppercase letter';
+  if (!/\d/.test(password)) return 'Password must contain at least one number';
+  return null; // 通过
+}
+
+/**
  * 用户注册
  * POST /api/auth/register
  * Body: { email, password, name }
@@ -17,6 +30,12 @@ router.post('/register', async (req, res) => {
 
     if (!email || !password || !name) {
       return res.status(400).json({ error: 'Email, password, and name are required' });
+    }
+
+    // 密码强度验证
+    const passwordError = validatePassword(password);
+    if (passwordError) {
+      return res.status(400).json({ error: passwordError });
     }
 
     // 检查是否已存在

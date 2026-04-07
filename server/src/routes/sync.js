@@ -46,6 +46,7 @@ router.get('/:coupleId/sync', async (req, res) => {
  * Auth required, coupleGuard required
  */
 router.post('/:coupleId/sync', async (req, res) => {
+  const client = null; // declare for finally block
   try {
     const { coupleId } = req.params;
     const { authorId, changes } = req.body; // { authorId, changes: [] }
@@ -62,18 +63,17 @@ router.post('/:coupleId/sync', async (req, res) => {
       });
     }
 
-    const client = require('pg').Client;
-    const clientInst = new client(process.env.DATABASE_URL);
-    await clientInst.connect();
+    // 使用连接池获取客户端（而不是新建独立连接）
+    client = await pool.connect();
 
     try {
-      await clientInst.query('BEGIN');
+      await client.query('BEGIN');
 
       for (const change of changes) {
         const { entityType, entityId, operation, payload, clientTs } = change;
 
         // 冲突检测：检查是否有更新的 server_ts
-        const conflictCheck = await clientInst.query(
+        const conflictCheck = await client.query(
           `SELECT server_ts FROM sync_events
            WHERE couple_id = $1 AND entity_id = $2
            ORDER BY server_ts DESC LIMIT 1`,
@@ -84,15 +84,14 @@ router.post('/:coupleId/sync', async (req, res) => {
           const latestServerTs = conflictCheck.rows[0].server_ts;
           const clientTime = new Date(clientTs);
 
-          // 如果客户端版本较旧，记录冲突但不阻塞
+          // 如果客户端版本较旧，记录冲突但不阻塞（LWW 由服务端时间决定）
           if (latestServerTs > clientTime) {
             console.warn(`Conflict detected for ${entityType}:${entityId}`);
-            // 这里可以选择返回冲突信息，或者继续插入（LWW 由服务端时间决定）
           }
         }
 
         // 插入事件
-        await clientInst.query(
+        await client.query(
           `INSERT INTO sync_events
              (couple_id, author_id, entity_type, entity_id, operation, payload, client_ts)
            VALUES ($1, $2, $3, $4, $5, $6, $7)
@@ -101,14 +100,14 @@ router.post('/:coupleId/sync', async (req, res) => {
         );
       }
 
-      await clientInst.query('COMMIT');
+      await client.query('COMMIT');
 
       res.json({ received: changes.length });
     } catch (err) {
-      await clientInst.query('ROLLBACK');
+      await client.query('ROLLBACK');
       throw err;
     } finally {
-      await clientInst.end();
+      if (client) client.release(); // 释放回连接池
     }
   } catch (err) {
     console.error('Sync POST error', err);

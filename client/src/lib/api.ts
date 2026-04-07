@@ -1,4 +1,4 @@
-const API_BASE = import.meta.env.VITE_API_URL || 'http://localhost:3000/api';
+const API_BASE = import.meta.env.VITE_API_URL || 'http://localhost:5174/api';
 
 async function handleResponse<T>(res: Response): Promise<T> {
   const contentType = res.headers.get('content-type');
