@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 import { useLiveQuery } from 'dexie-react-hooks';
-import { db } from '../db/index';
-import { initSync } from '../sync/syncClient';
+import { db } from '../../db/index';
+import { initSync } from '../../sync/syncClient';
 
 export function useSync() {
   const [lastSync, setLastSync] = useState<number>(0);
@@ -36,7 +36,12 @@ export function useSync() {
 let syncInitialized = false;
 let currentCoupleId: string | null = null;
 
-export function initializeSync(token: string, coupleId: string) {
+export function initializeSync(token: string, coupleId: string | null | undefined) {
+  if (!token || !coupleId) {
+    console.warn('initializeSync: missing token or coupleId, skipping sync init');
+    return;
+  }
+
   if (syncInitialized && currentCoupleId === coupleId) {
     return; // Already initialized for this couple
   }

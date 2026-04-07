@@ -1,7 +1,9 @@
 import express from 'express';
-import { query } from '../db/index.js';
+import { query, pool } from '../db/index.js';
 
 const router = express.Router();
+
+const MAX_BATCH_SIZE = 500;
 
 /**
  * 获取增量同步事件
@@ -51,6 +53,13 @@ router.post('/:coupleId/sync', async (req, res) => {
 
     if (!Array.isArray(changes) || changes.length === 0) {
       return res.json({ received: 0 });
+    }
+
+    if (changes.length > MAX_BATCH_SIZE) {
+      return res.status(400).json({
+        error: `Batch size exceeds limit of ${MAX_BATCH_SIZE}`,
+        received: changes.length,
+      });
     }
 
     const client = require('pg').Client;
