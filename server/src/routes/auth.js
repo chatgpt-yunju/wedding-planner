@@ -3,6 +3,7 @@ import bcrypt from 'bcryptjs';
 import { randomBytes } from 'crypto';
 import { query } from '../db/index.js';
 import { generateTokens, generateInviteCode, hashToken } from '../services/tokenService.js';
+import { rateLimit } from '../middleware/rateLimit.js';
 
 const router = express.Router();
 
@@ -16,7 +17,7 @@ function validatePassword(password) {
   if (!/[a-z]/.test(password)) return 'Password must contain lowercase letter';
   if (!/[A-Z]/.test(password)) return 'Password must contain uppercase letter';
   if (!/\d/.test(password)) return 'Password must contain at least one number';
-  return null; // 通过
+  return null;
 }
 
 /**
@@ -24,7 +25,7 @@ function validatePassword(password) {
  * POST /api/auth/register
  * Body: { email, password, name }
  */
-router.post('/register', async (req, res) => {
+router.post('/register', rateLimit({ points: 5, duration: 60 }), async (req, res) => {
   try {
     const { email, password, name } = req.body;
 
@@ -60,11 +61,12 @@ router.post('/register', async (req, res) => {
 
     // 自动创建 pending couple（用户自己成为 partner_a）
     const inviteCode = generateInviteCode();
+    const expiresAt = new Date(Date.now() + 10 * 60 * 1000); // 10分钟过期
     const coupleResult = await query(
-      `INSERT INTO couples (partner_a_id, invite_code, status)
-       VALUES ($1, $2, 'pending')
+      `INSERT INTO couples (partner_a_id, invite_code, status, created_at, expires_at)
+       VALUES ($1, $2, 'pending', NOW(), $3)
        RETURNING id`,
-      [user.id, inviteCode]
+      [user.id, inviteCode, expiresAt]
     );
     const couple = coupleResult.rows[0];
 
@@ -78,7 +80,6 @@ router.post('/register', async (req, res) => {
     });
   } catch (err) {
     console.error('Register error:', err);
-    // In development, return detailed error
     if (process.env.NODE_ENV === 'development') {
       return res.status(500).json({
         error: 'Server error',
@@ -98,7 +99,7 @@ router.post('/register', async (req, res) => {
  * POST /api/auth/login
  * Body: { email, password }
  */
-router.post('/login', async (req, res) => {
+router.post('/login', rateLimit({ points: 5, duration: 60 }), async (req, res) => {
   try {
     const { email, password } = req.body;
 
@@ -166,9 +167,6 @@ router.post('/refresh', async (req, res) => {
     if (!payload) {
       return res.status(401).json({ error: 'Invalid refresh token' });
     }
-
-    // 检查黑名单（如果需要更复杂的黑名单管理，可用 Redis）
-    // 这里简化处理：只验证签名
 
     // 获取用户信息和 couple
     const userResult = await query(

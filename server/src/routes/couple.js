@@ -54,10 +54,10 @@ router.post('/invite', async (req, res) => {
 
     await query(
       `UPDATE couples
-       SET invite_code = $1, created_at = NOW()
-       WHERE id = $2
-       RETURNING invite_code`,
-      [inviteCode, couple.id]
+       SET invite_code = $1, expires_at = $2, created_at = NOW()
+       WHERE id = $3
+       RETURNING invite_code, expires_at`,
+      [inviteCode, expiresAt, couple.id]
     );
 
     res.json({
@@ -86,12 +86,12 @@ router.post('/join', async (req, res) => {
       return res.status(400).json({ error: 'Invite code required' });
     }
 
-    // 查找有效的邀请
+    // 查找有效的邀请（使用 expires_at 检查是否过期）
     const coupleResult = await query(
-      `SELECT id, partner_a_id, status FROM couples
+      `SELECT id, partner_a_id, status, expires_at FROM couples
        WHERE invite_code = $1
          AND status = 'pending'
-         AND created_at > NOW() - INTERVAL '10 minutes'`,
+         AND (expires_at IS NULL OR expires_at > NOW())`,
       [inviteCode]
     );
 
@@ -121,7 +121,7 @@ router.post('/join', async (req, res) => {
     // 更新 couple，把当前用户设为 partner_b，激活 couple
     await query(
       `UPDATE couples
-       SET partner_b_id = $1, status = 'active', activated_at = NOW(), invite_code = NULL
+       SET partner_b_id = $1, status = 'active', activated_at = NOW(), invite_code = NULL, expires_at = NULL
        WHERE id = $2
        RETURNING id`,
       [userId, couple.id]
@@ -159,9 +159,9 @@ router.get('/', async (req, res) => {
 
     const user = userResult.rows[0];
 
-    // Get couple info
+    // Get couple info (pending 或 active)
     const coupleResult = await query(
-      `SELECT c.id, c.status, c.activated_at,
+      `SELECT c.id, c.status, c.activated_at, c.invite_code, c.expires_at,
               ua.name as partner_a_name, ub.name as partner_b_name,
               ua.id as partner_a_id, ub.id as partner_b_id
        FROM couples c
@@ -196,7 +196,7 @@ router.delete('/', async (req, res) => {
 
     const result = await query(
       `UPDATE couples
-       SET status = 'dissolved', partner_b_id = NULL
+       SET status = 'dissolved', partner_b_id = NULL, invite_code = NULL, expires_at = NULL
        WHERE partner_a_id = $1 AND status = 'active'
        RETURNING id`,
       [userId]
